@@ -21,14 +21,12 @@ void InputHandler::init(GLFWwindow* win, PuzzleState* state,
 
 int InputHandler::hitTest(double mouseX, double mouseY)
 {
-	// ── CHANGED: read current window size every time ──────────────────────────
 	int currentW, currentH;
 	glfwGetWindowSize(window, &currentW, &currentH);
 
 	float ndcX = (float)(mouseX / currentW) * 2.0f - 1.0f;
 	float ndcY = -(float)(mouseY / currentH) * 2.0f + 1.0f;
 
-	// Rest is unchanged
 	for (int row = 0; row < 3; row++)
 	{
 		for (int col = 0; col < 3; col++)

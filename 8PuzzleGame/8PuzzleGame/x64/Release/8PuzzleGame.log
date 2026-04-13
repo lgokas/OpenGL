@@ -1,0 +1,10 @@
+﻿  glad.c
+  main.cpp
+  InputHandler.cpp
+  Utils.cpp
+  Previous IPDB not found, fall back to full compilation.
+LINK : warning LNK4098: defaultlib 'MSVCRTD' conflicts with use of other libs; use /NODEFAULTLIB:library
+  Generating code
+  All 428 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  8PuzzleGame.vcxproj -> C:\Users\Lukas\Documents\GitHub\OpenGL\8PuzzleGame\x64\Release\8PuzzleGame.exe
