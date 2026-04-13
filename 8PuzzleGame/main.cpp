@@ -134,6 +134,9 @@ int main()
 					const glm::vec3& c = colors[index];
 
 					if (c == EMPTY_COLOR) continue; // skip hole / missing slot
+					if (puzzle.animation.active && &colors == &puzzle.currentColors
+						&& index == puzzle.animation.fromIndex)
+						continue;
 
 					float x = (col - 1) * gridSpacing;
 					float y = (1 - row) * gridSpacing;
@@ -154,9 +157,35 @@ int main()
 	int modeLoc = glGetUniformLocation(renderingProgram, "renderMode");
 
 	InputHandler::init(window, &puzzle, SCR_WIDTH, SCR_HEIGHT, 0.6f, size);
+
+	double lastTime = glfwGetTime();
 	while (!glfwWindowShouldClose(window))
 	{
 		processInput(window);
+
+		double now = glfwGetTime();
+		float  dt = static_cast<float>(now - lastTime);
+		lastTime = now;
+
+		if (puzzle.animation.active)
+		{
+			puzzle.animation.progress += dt * SLIDE_SPEED;
+			if (puzzle.animation.progress >= 1.0f)
+			{
+				puzzle.animation.progress = 1.0f;
+
+				puzzle.currentColors[puzzle.animation.toIndex] = puzzle.currentColors[puzzle.animation.fromIndex];
+				puzzle.currentColors[puzzle.animation.fromIndex] = EMPTY_COLOR;
+				puzzle.emptyIndex = puzzle.animation.fromIndex;
+				puzzle.animation.active = false;
+
+				if (checkWin(puzzle))
+				{
+					puzzle.solved = true;
+					std::cout << "Puzzle solved!\n";
+				}
+			}
+		}
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -171,6 +200,21 @@ int main()
 
 		glUniform1i(modeLoc, 1); // solid    — top sliding grid
 		renderGrid(puzzle.currentColors, 0.0f, modelLoc, colorLoc);
+
+		if (puzzle.animation.active)
+		{
+			glm::vec2 pos = glm::mix(puzzle.animation.startPos,
+				puzzle.animation.endPos,
+				puzzle.animation.progress);
+
+			glm::mat4 animModel = glm::mat4(1.0f);
+			animModel = glm::translate(animModel, glm::vec3(pos.x, pos.y, 0.0f));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(animModel));
+
+			const glm::vec3& c = puzzle.currentColors[puzzle.animation.fromIndex];
+			glUniform4f(colorLoc, c.r, c.g, c.b, 1.0f);
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		}
 
 		glfwSwapBuffers(window);
 		if (puzzle.solved)

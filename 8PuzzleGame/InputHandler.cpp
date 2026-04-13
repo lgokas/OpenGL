@@ -63,6 +63,8 @@ void InputHandler::mouseButtonCallback(GLFWwindow* window, int button, int actio
 	if (button != GLFW_MOUSE_BUTTON_LEFT || action != GLFW_PRESS) return;
 	if (!puzzle || puzzle->solved) return;
 
+	if (puzzle->animation.active) return;
+
 	double mouseX, mouseY;
 	glfwGetCursorPos(window, &mouseX, &mouseY);
 
@@ -71,16 +73,19 @@ void InputHandler::mouseButtonCallback(GLFWwindow* window, int button, int actio
 
 	if (adjacent(clicked, puzzle->emptyIndex))
 	{
-		// Slide the clicked tile into the empty slot
-		puzzle->currentColors[puzzle->emptyIndex] = puzzle->currentColors[clicked];
-		puzzle->currentColors[clicked] = EMPTY_COLOR;
-		puzzle->emptyIndex = clicked;
+		// ── CHANGED: fill in animation instead of swapping immediately ────────
+		int fromRow = clicked / 3, fromCol = clicked % 3;
+		int toRow = puzzle->emptyIndex / 3, toCol = puzzle->emptyIndex % 3;
 
-		if (checkWin(*puzzle))
-		{
-			puzzle->solved = true;
-			std::cout << "Puzzle solved!\n";
-		}
+		TileAnimation& anim = puzzle->animation;
+		anim.active = true;
+		anim.fromIndex = clicked;
+		anim.toIndex = puzzle->emptyIndex;
+		anim.progress = 0.0f;
+		anim.startPos = { (fromCol - 1) * spacing, (1 - fromRow) * spacing };
+		anim.endPos = { (toCol - 1) * spacing, (1 - toRow) * spacing };
+		// The logical swap (currentColors / emptyIndex) happens in main.cpp
+		// once progress reaches 1.0.
 	}
-	// If not adjacent, do nothing — tile can't move
+
 }
