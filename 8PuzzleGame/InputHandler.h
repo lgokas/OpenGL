@@ -15,7 +15,7 @@ public:
 
 private:
 	static PuzzleState* puzzle;
-	static int         screenW, screenH;
+	static GLFWwindow* window;
 	static float       spacing, squareSize;
 
 	// Returns grid index [0–8] of the top-grid square under the cursor, or -1

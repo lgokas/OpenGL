@@ -5,47 +5,43 @@
 
 // Static member definitions
 PuzzleState* InputHandler::puzzle = nullptr;
-int          InputHandler::screenW = 800;
-int          InputHandler::screenH = 600;
+GLFWwindow* InputHandler::window = nullptr;
 float        InputHandler::spacing = 0.6f;
 float        InputHandler::squareSize = 0.25f;
 
-void InputHandler::init(GLFWwindow* window, PuzzleState* state,
-	int scrW, int scrH, float sp, float sq)
+void InputHandler::init(GLFWwindow* win, PuzzleState* state,
+	int /*scrW*/, int /*scrH*/, float sp, float sq)
 {
 	puzzle = state;
-	screenW = scrW;
-	screenH = scrH;
+	window = win;
 	spacing = sp;
 	squareSize = sq;
-	glfwSetMouseButtonCallback(window, mouseButtonCallback);
+	glfwSetMouseButtonCallback(win, mouseButtonCallback);
 }
 
 int InputHandler::hitTest(double mouseX, double mouseY)
 {
-	// Convert window-space cursor position to NDC.
-	// No view/projection matrix is used in the shaders, so NDC == world space.
-	float ndcX = (float)(mouseX / screenW) * 2.0f - 1.0f;
-	float ndcY = -(float)(mouseY / screenH) * 2.0f + 1.0f;
+	// ── CHANGED: read current window size every time ──────────────────────────
+	int currentW, currentH;
+	glfwGetWindowSize(window, &currentW, &currentH);
 
+	float ndcX = (float)(mouseX / currentW) * 2.0f - 1.0f;
+	float ndcY = -(float)(mouseY / currentH) * 2.0f + 1.0f;
+
+	// Rest is unchanged
 	for (int row = 0; row < 3; row++)
 	{
 		for (int col = 0; col < 3; col++)
 		{
 			int idx = row * 3 + col;
-
-			// Skip the hole — it can't be clicked
 			if (idx == puzzle->emptyIndex) continue;
 
-			// Centre of this square in NDC (matches the translate in renderGrid)
 			float cx = (col - 1) * spacing;
 			float cy = (1 - row) * spacing;
 
 			if (ndcX >= cx - squareSize && ndcX <= cx + squareSize &&
 				ndcY >= cy - squareSize && ndcY <= cy + squareSize)
-			{
 				return idx;
-			}
 		}
 	}
 	return -1;
