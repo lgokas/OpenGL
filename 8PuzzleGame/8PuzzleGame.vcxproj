@@ -145,11 +145,12 @@
   <ItemGroup>
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Picking.cpp" />
+    <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Picking.h" />
+    <ClInclude Include="InputHandler.h" />
+    <ClInclude Include="Puzzle.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
