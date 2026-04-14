@@ -20,6 +20,13 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 GLuint renderingProgram;
 
+enum class GameState {
+	MENU, // 0
+	PLAYING // 1
+};
+
+GameState gameState = GameState::MENU;
+
 int main()
 {
 	glfwInit();
@@ -53,7 +60,7 @@ int main()
 		-size, -size, 0.0f,
 		-size,  size, 0.0f
 	};
-	unsigned int indices[] = {  // note that we start from 0!
+	unsigned int indices[] = {
 		0, 1, 3,  // first Triangle
 		1, 2, 3   // second Triangle
 	};
@@ -160,6 +167,9 @@ int main()
 	InputHandler::init(window, &puzzle, SCR_WIDTH, SCR_HEIGHT, 0.6f, size);
 
 	double lastTime = glfwGetTime();
+	double timer = 0.0;
+	int secondsElapsed = 0;
+
 	while (!glfwWindowShouldClose(window))
 	{
 		processInput(window);
@@ -168,59 +178,84 @@ int main()
 		float  dt = static_cast<float>(now - lastTime);
 		lastTime = now;
 
-		if (puzzle.animation.active)
-		{
-			puzzle.animation.progress += dt * SLIDE_SPEED;
-			if (puzzle.animation.progress >= 1.0f)
+		if (!puzzle.solved) {
+			timer += dt;
+			if (timer >= 1.0)
 			{
-				puzzle.animation.progress = 1.0f;
-
-				puzzle.currentColors[puzzle.animation.toIndex] = puzzle.currentColors[puzzle.animation.fromIndex];
-				puzzle.currentColors[puzzle.animation.fromIndex] = EMPTY_COLOR;
-				puzzle.emptyIndex = puzzle.animation.fromIndex;
-				puzzle.animation.active = false;
-
-				if (checkWin(puzzle))
-				{
-					puzzle.solved = true;
-					std::cout << "Puzzle solved!\n";
-				}
+				secondsElapsed++;
+				std::cout << secondsElapsed << "\n";
+				timer -= 1.0;
 			}
 		}
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-		glUseProgram(renderingProgram);
 
-		glBindVertexArray(VAO);
+		std::cout << static_cast<int>(gameState) << "\n";
 
-		glDisable(GL_BLEND);
-
-		glUniform1i(modeLoc, 0); // striped  — bottom target grid
-		renderGrid(puzzle.targetColors, -0.1f, modelLoc, colorLoc);
-
-		glUniform1i(modeLoc, 1); // solid    — top sliding grid
-		renderGrid(puzzle.currentColors, 0.0f, modelLoc, colorLoc);
-
-		if (puzzle.animation.active)
+		if (gameState == GameState::MENU)
 		{
-			glm::vec2 pos = glm::mix(puzzle.animation.startPos,
-				puzzle.animation.endPos,
-				puzzle.animation.progress);
-
-			glm::mat4 animModel = glm::mat4(1.0f);
-			animModel = glm::translate(animModel, glm::vec3(pos.x, pos.y, 0.0f));
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(animModel));
-
-			const glm::vec3& c = puzzle.currentColors[puzzle.animation.fromIndex];
-			glUniform4f(colorLoc, c.r, c.g, c.b, 1.0f);
-			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+			glfwSwapBuffers(window);
+			glfwPollEvents();
+			continue;
 		}
 
-		glfwSwapBuffers(window);
-		if (puzzle.solved)
-			glfwSetWindowTitle(window, "Solved! Press ESC to exit.");
-		glfwPollEvents();
+		if (gameState == GameState::PLAYING) {
+			if (puzzle.animation.active)
+			{
+				puzzle.animation.progress += dt * SLIDE_SPEED;
+				if (puzzle.animation.progress >= 1.0f)
+				{
+					puzzle.animation.progress = 1.0f;
+
+					puzzle.currentColors[puzzle.animation.toIndex] = puzzle.currentColors[puzzle.animation.fromIndex];
+					puzzle.currentColors[puzzle.animation.fromIndex] = EMPTY_COLOR;
+					puzzle.emptyIndex = puzzle.animation.fromIndex;
+					puzzle.animation.active = false;
+
+					if (checkWin(puzzle))
+					{
+						puzzle.solved = true;
+						std::cout << "Puzzle solved!\n";
+					}
+				}
+			}
+
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+			glUseProgram(renderingProgram);
+
+			glBindVertexArray(VAO);
+
+			glDisable(GL_BLEND);
+
+			glUniform1i(modeLoc, 0); // striped  — bottom target grid
+			renderGrid(puzzle.targetColors, -0.1f, modelLoc, colorLoc);
+
+			glUniform1i(modeLoc, 1); // solid    — top sliding grid
+			renderGrid(puzzle.currentColors, 0.0f, modelLoc, colorLoc);
+
+			if (puzzle.animation.active)
+			{
+				glm::vec2 pos = glm::mix(puzzle.animation.startPos,
+					puzzle.animation.endPos,
+					puzzle.animation.progress);
+
+				glm::mat4 animModel = glm::mat4(1.0f);
+				animModel = glm::translate(animModel, glm::vec3(pos.x, pos.y, 0.0f));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(animModel));
+
+				const glm::vec3& c = puzzle.currentColors[puzzle.animation.fromIndex];
+				glUniform4f(colorLoc, c.r, c.g, c.b, 1.0f);
+				glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			}
+
+			glfwSwapBuffers(window);
+			if (puzzle.solved)
+				glfwSetWindowTitle(window, "Solved! Press ESC to exit.");
+			glfwPollEvents();
+		}
+
 	}
 
 	glfwTerminate();
@@ -235,6 +270,9 @@ void processInput(GLFWwindow* window)
 	{
 		glfwSetWindowShouldClose(window, true);
 	}
+
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS) { gameState = GameState::PLAYING; }
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) { gameState = GameState::MENU; }
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
